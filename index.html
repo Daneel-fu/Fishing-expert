@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>捕鱼能手</title>
+    <style>
+        html, body {
+          margin: 0;
+          padding: 0;
+          width: 100vw;
+          height: 100vh;
+          overflow: hidden;
+          background: #000;
+        }
+        #gameCanvas {
+          width: 100vw;
+          height: 100vh;
+          display: block;
+          position: fixed;
+          left: 0;
+          top: 0;
+        }
+        canvas { 
+            display: block; 
+            width: 1920px;
+            height: 1080px;
+            position: fixed;
+            left: 0;
+            top: 0;
+            object-fit: contain;
+        }
+        #result { 
+            position: absolute; 
+            left: 0; 
+            top: 0; 
+            width: 100vw; 
+            height: 100vh; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            justify-content: center; 
+            background: rgba(255,255,255,0.8); 
+            z-index: 10; 
+        }
+        #result { display: none; }
+        .btn { 
+            font-size: 2rem; 
+            margin: 1rem; 
+            padding: 0.5rem 2rem; 
+            background: #0099ff; 
+            color: #fff; 
+            border: none; 
+            border-radius: 8px; 
+            cursor: pointer; 
+        }
+        .btn:hover { background: #007acc; }
+        .report-modal {
+            position: fixed; left: 0; top: 0; width: 100vw; height: 100vh;
+            background: rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center; z-index: 9999;
+        }
+        .report-content {
+            background: #f8f6f2; border-radius: 12px; width: 700px; padding: 30px 40px; box-shadow: 0 4px 16px #aaa;
+        }
+        .section { margin-bottom: 24px; }
+        .section-title { background: #3399cc; color: #fff; padding: 6px 16px; border-radius: 6px; font-weight: bold; margin-bottom: 10px; }
+        .info-row { margin: 8px 0 0 0; font-size: 1.1em; }
+        textarea { border-radius: 6px; border: 1px solid #ccc; padding: 6px; }
+        button { margin-left: 10px; padding: 6px 18px; border-radius: 6px; border: none; background: #3399cc; color: #fff; cursor: pointer; }
+        button:hover { background: #267399; }
+        
+        /* 版本信息样式 */
+        #versionInfo {
+            position: fixed;
+            top: 10px;
+            right: 10px;
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            z-index: 1000;
+            font-family: monospace;
+        }
+        
+        #versionLog {
+            position: fixed;
+            bottom: 10px;
+            left: 10px;
+            background: rgba(0, 0, 0, 0.8);
+            color: #00ff00;
+            padding: 10px;
+            border-radius: 6px;
+            font-size: 11px;
+            z-index: 1000;
+            font-family: monospace;
+            max-width: 300px;
+            max-height: 200px;
+            overflow-y: auto;
+            display: none;
+        }
+        
+        .version-status {
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 10px;
+            margin-left: 5px;
+        }
+        
+        .version-latest {
+            background: #28a745;
+            color: white;
+        }
+        
+        .version-outdated {
+            background: #dc3545;
+            color: white;
+        }
+        
+        .version-checking {
+            background: #ffc107;
+            color: black;
+        }
+        #gameMainArea {
+            margin-top: -40px;
+        }
+        #infoBar {
+          width: 100vw;
+          height: 54px;
+          background: #333;
+          color: #fff;
+          display: flex;
+          align-items: center;
+          font-size: 1.2rem;
+          font-weight: normal;
+          justify-content: space-between;
+          padding: 0 40px 0 0;
+          position: absolute;
+          top: 0;
+          left: 0;
+          z-index: 2000;
+        }
+        
+        /* 配置页面样式 */
+        #configModal {
+            position: fixed;
+            left: 0;
+            top: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 5000;
+        }
+        
+        .config-content {
+            background: #f8f6f2;
+            border-radius: 12px;
+            width: 600px;
+            padding: 40px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+        
+        .config-title {
+            text-align: center;
+            font-size: 2rem;
+            color: #333;
+            margin-bottom: 30px;
+            font-weight: bold;
+        }
+        
+        .config-section {
+            margin-bottom: 25px;
+        }
+        
+        .config-section-title {
+            font-size: 1.2rem;
+            color: #555;
+            margin-bottom: 10px;
+            font-weight: bold;
+        }
+        
+        .config-option {
+            display: flex;
+            align-items: center;
+            margin: 10px 0;
+            padding: 8px 0;
+        }
+        
+        .config-option label {
+            flex: 1;
+            font-size: 1rem;
+            color: #333;
+        }
+        
+        .config-option select,
+        .config-option input {
+            padding: 8px 12px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            font-size: 1rem;
+            background: #fff;
+        }
+        
+        .config-option select {
+            min-width: 120px;
+        }
+        
+        .config-option input {
+            width: 80px;
+        }
+        
+        .start-game-btn {
+            display: block;
+            width: 100%;
+            padding: 15px;
+            background: #0099ff;
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.3rem;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 20px;
+            transition: background 0.3s;
+        }
+        
+        .start-game-btn:hover {
+            background: #007acc;
+        }
+        
+        .config-info {
+            text-align: center;
+            color: #666;
+            font-size: 0.9rem;
+            margin-top: 15px;
+            line-height: 1.4;
+        }
+    </style>
+</head>
+<body>
+    <div id="infoBar">
+      <div style="display:flex;align-items:center;position:absolute;left:40px;top:0;height:54px;">
+        <img src="assets/images/explain.png" alt="explain" style="height:36px;width:auto;margin-right:16px;cursor:pointer;" id="explainBtn">
+        <img src="assets/images/stop.png" alt="stop" style="height:36px;width:auto;cursor:pointer;" id="stopBtn">
+      </div>
+      <div style="margin-left:auto;display:flex;align-items:center;gap:40px;">
+        <span id="scoreInfo">分数：0</span>
+        <span id="timerInfo">时间：00:00</span>
+      </div>
+    </div>
+    <canvas id="gameCanvas" width="1920" height="1026" style="position:absolute;top:0;left:0;"></canvas>
+    <canvas id="heatmapCanvas" width="1920" height="1080" style="display:none;"></canvas>
+    <div id="timerDisplay" style="position:fixed;top:20px;right:40px;font-size:40px;color:#222;z-index:1001;"></div>
+    
+    <div id="result">
+        <h2 id="scoreText">得分: 0</h2>
+        <button class="btn" id="backBtn">返回</button>
+    </div>
+    <div id="reportModal" class="report-modal" style="display:none;">
+      <div class="report-content">
+        <h2 style="text-align:center;">训练报告</h2>
+        <div class="section">
+          <div class="section-title">个人信息</div>
+          <div class="info-row">
+            姓名：<input id="userName" style="width:80px;"> 
+            性别：<input id="userGender" style="width:40px;"> 
+            年龄：<input id="userAge" style="width:40px;"> 
+            编号：<input id="userId" style="width:60px;">
+          </div>
+        </div>
+        <div class="section">
+          <div class="section-title">训练信息</div>
+          <div class="info-row">
+            训练名称：<span id="trainName">捕鱼能手</span>
+            训练时长：<span id="trainDuration">01:00</span>
+            开始时间：<span id="trainStart">2025-06-18 16:35:09</span>
+            分数：<span id="trainScore">0</span>
+          </div>
+        </div>
+        <div class="section">
+          <div class="section-title">图像分析</div>
+          <div style="text-align:center;">
+            <img id="reportImage" src="assets/1.jpg" style="width:300px;height:180px;border:1px solid #ccc;">
+            <div>活动区域热力图</div>
+          </div>
+        </div>
+        <div class="section">
+          <div class="section-title">意见</div>
+          <textarea id="userComment" style="width:90%;height:60px;"></textarea>
+          <div style="margin-top:10px;">
+            <span>签名：</span><input id="userSign" style="width:120px;">
+            <button onclick="saveReport()">保存</button>
+            <button onclick="printReport()">打印</button>
+            <button onclick="closeReport()">退出</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div id="pauseModal" style="display:none;position:fixed;left:0;top:0;width:100vw;height:100vh;z-index:3000;display:flex;align-items:center;justify-content:center;">
+      <div style="position:relative;display:inline-block;">
+        <img src="assets/images/stop-border.png" alt="pause-border" style="display:block;position:relative;z-index:1;">
+        <div style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:2;display:flex;flex-direction:row;gap:32px;align-items:center;justify-content:center;">
+          <img src="assets/images/stop-restart.png" id="restartBtn" alt="restart" style="cursor:pointer;">
+          <img src="assets/images/stop-resume.png" id="resumeBtn" alt="resume" style="cursor:pointer;">
+          <img src="assets/images/stop-exit.png" id="exitBtn" alt="exit" style="cursor:pointer;">
+        </div>
+      </div>
+    </div>
+    <div id="ruleModal" style="display:none;position:fixed;left:0;top:0;width:100vw;height:100vh;z-index:4000;display:flex;align-items:center;justify-content:center;">
+      <div style="position:relative;display:inline-block;">
+        <img src="assets/images/rule-border.png" alt="rule-border" style="display:block;position:relative;z-index:1;">
+        <div style="position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:2;display:flex;flex-direction:column;align-items:center;justify-content:center;">
+          <div id="ruleContentWrap" style="margin-top: -20px;">
+            <img src="assets/images/rule1.png" alt="game-rule-demo" style="width:600px;height:400px;margin-bottom:20px;object-fit:contain;margin-top:30px;">
+            <div style="font-size:1.3rem;color:#333;text-align:center;margin-bottom:24px;line-height:1.8;">
+              准确点击屏幕上飞出海面的鱼即可得分，可以同时点触多条鱼，<br>
+              如果碰到炸弹则会被扣分，注意躲避炸弹获得更高分数。
+            </div>
+            <button id="ruleBackBtn" style="font-size:1.2rem;padding:8px 36px;background:#0099ff;color:#fff;border:none;border-radius:8px;cursor:pointer;display:block;margin:14px auto 0 auto;">返回</button>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- 配置页面 -->
+    <div id="configModal">
+        <div class="config-content">
+            <div class="config-title">游戏配置</div>
+            
+            <div class="config-section">
+                <div class="config-section-title">游戏设置</div>
+                <div class="config-option">
+                    <label>难度等级：</label>
+                    <select id="difficultySelect">
+                        <option value="easy">简单</option>
+                        <option value="normal" selected>普通</option>
+                        <option value="hard">困难</option>
+                    </select>
+                </div>
+                <div class="config-option">
+                    <label>训练时长（分钟）：</label>
+                    <input type="number" id="trainingTimeInput" value="1" min="1" max="60">
+                </div>
+            </div>
+            
+
+            
+            <button class="start-game-btn" id="startGameBtn">开始游戏</button>
+            
+            <div class="config-info">
+                点击"开始游戏"按钮开始训练，训练过程中请准确点击飞出海面的鱼来获得分数。
+            </div>
+        </div>
+    </div>
+    
+    <script src="main.js"></script>
+</body>
+</html> 
